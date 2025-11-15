@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power System Load Frequency Control Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 0;
+            min-height: calc(100vh - 200px);
+        }
+
+        .controls-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-right: 2px solid #e0e0e0;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+
+        .visualization-panel {
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .example-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+            padding: 15px;
+            font-size: 1.1em;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn.active {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .slider-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .slider-label-name {
+            font-weight: 600;
+        }
+
+        .slider-label-value {
+            color: #667eea;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border: none;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .solver-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .results-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .results-box h4 {
+            color: #667eea;
+            font-family: 'Segoe UI', sans-serif;
+            margin-bottom: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-bottom: 25px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .info-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-panel {
+                border-right: none;
+                border-bottom: 2px solid #e0e0e0;
+                max-height: none;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .header p {
+                font-size: 0.9em;
+            }
+
+            .example-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Power System Load Frequency Control Simulator</h1>
+            <p>Dynamic ODE Simulation with Real-Time Visualization</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <!-- Example Selection -->
+                <div class="section">
+                    <h3>📚 Select Example</h3>
+                    <div class="example-buttons">
+                        <button class="btn btn-primary active" id="btnExample79" onclick="loadExample79()">Example 7.9</button>
+                        <button class="btn btn-primary" id="btnExample710" onclick="loadExample710()">Example 7.10</button>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="withIntegral" checked onchange="toggleIntegralControl()">
+                        <label for="withIntegral">Integral Controller</label>
+                        <span class="info-badge">ON</span>
+                    </div>
+                </div>
+
+                <!-- Parameter Sliders -->
+                <div class="section">
+                    <h3>⚙️ System Parameters</h3>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">K<sub>ps</sub> (Power System Gain)</span>
+                            <span class="slider-label-value" id="valueKps">104.0</span>
+                        </div>
+                        <input type="range" id="sliderKps" min="10" max="200" step="0.1" value="104" oninput="updateSlider('Kps')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">t<sub>ps</sub> (PS Time Const) [s]</span>
+                            <span class="slider-label-value" id="valueTps">22.0</span>
+                        </div>
+                        <input type="range" id="sliderTps" min="1" max="50" step="0.1" value="22" oninput="updateSlider('Tps')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">R (Speed Regulation)</span>
+                            <span class="slider-label-value" id="valueR">3.0</span>
+                        </div>
+                        <input type="range" id="sliderR" min="0.5" max="10" step="0.1" value="3" oninput="updateSlider('R')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">t<sub>sg</sub> (Governor Time Const) [s]</span>
+                            <span class="slider-label-value" id="valueTsg">0.30</span>
+                        </div>
+                        <input type="range" id="sliderTsg" min="0.1" max="2" step="0.01" value="0.3" oninput="updateSlider('Tsg')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">t<sub>t</sub> (Turbine Time Const) [s]</span>
+                            <span class="slider-label-value" id="valueTt">0.40</span>
+                        </div>
+                        <input type="range" id="sliderTt" min="0.1" max="2" step="0.01" value="0.4" oninput="updateSlider('Tt')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">k<sub>i</sub> (Integral Gain)</span>
+                            <span class="slider-label-value" id="valueKi">0.100</span>
+                        </div>
+                        <input type="range" id="sliderKi" min="0" max="1" step="0.01" value="0.1" oninput="updateSlider('Ki')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">ΔP<sub>L</sub> (Load Disturbance) [p.u.]</span>
+                            <span class="slider-label-value" id="valueDeltaPL">0.480</span>
+                        </div>
+                        <input type="range" id="sliderDeltaPL" min="0" max="1" step="0.01" value="0.48" oninput="updateSlider('DeltaPL')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">Simulation Time [s]</span>
+                            <span class="slider-label-value" id="valueTsim">50</span>
+                        </div>
+                        <input type="range" id="sliderTsim" min="10" max="100" step="1" value="50" oninput="updateSlider('Tsim')">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span class="slider-label-name">Time Step dt [s]</span>
+                            <span class="slider-label-value" id="valueDt">0.010</span>
+                        </div>
+                        <input type="range" id="sliderDt" min="0.001" max="0.1" step="0.001" value="0.01" oninput="updateSlider('Dt')">
+                    </div>
+                </div>
+
+                <!-- Solver Selection -->
+                <div class="section">
+                    <h3>🔬 ODE Solver</h3>
+                    <div class="solver-buttons">
+                        <button class="btn btn-secondary active" id="btnRK45" onclick="selectSolver('RK45')">RK45</button>
+                        <button class="btn btn-secondary" id="btnEuler" onclick="selectSolver('Euler')">Euler</button>
+                    </div>
+                </div>
+
+                <!-- Run Simulation -->
+                <div class="section">
+                    <button class="btn btn-success" onclick="runSimulation()">▶ Run Simulation</button>
+                </div>
+
+                <!-- Results Display -->
+                <div class="section">
+                    <h3>📊 Results</h3>
+                    <div class="results-box" id="resultsBox">
+                        <p style="color: #999; text-align: center;">Click "Run Simulation" to see results</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Panel -->
+            <div class="visualization-panel">
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <canvas id="chartFrequency"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartGovernor"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartTurbine"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartPowerBalance"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let charts = {};
+        let currentSolver = 'RK45';
+        let currentExample = 'Example 7.9';
+
+        // Power System Model Class
+        class PowerSystemModel {
+            constructor(Kps, tps, R, tsg, tt, ki, deltaPL) {
+                this.Kps = Kps;
+                this.tps = tps;
+                this.R = R;
+                this.tsg = tsg;
+                this.tt = tt;
+                this.ki = ki;
+                this.deltaPL = deltaPL;
+            }
+
+            derivatives(t, x) {
+                const deltaF = x[0];
+                const pg = x[1];
+                const pt = x[2];
+                const integralF = x[3];
+
+                const deltaPc = this.ki * integralF;
+
+                const dx0 = (this.Kps / this.tps) * (pt - this.deltaPL) - (1.0 / this.tps) * deltaF;
+                const dx1 = (1.0 / this.tsg) * ((-1.0 / this.R) * deltaF - deltaPc) - (1.0 / this.tsg) * pg;
+                const dx2 = (1.0 / this.tt) * pg - (1.0 / this.tt) * pt;
+                const dx3 = deltaF;
+
+                return [dx0, dx1, dx2, dx3];
+            }
+        }
+
+        // RK45 Solver
+        class RK45Solver {
+            constructor(model) {
+                this.model = model;
+            }
+
+            solve(x0, tSpan, dt) {
+                const [tStart, tEnd] = tSpan;
+                const t = [];
+                const x = [];
+
+                let currentT = tStart;
+                let currentX = [...x0];
+
+                t.push(currentT);
+                x.push([...currentX]);
+
+                while (currentT < tEnd) {
+                    const k1 = this.model.derivatives(currentT, currentX);
+
+                    const x2 = currentX.map((val, i) => val + dt * k1[i] / 2);
+                    const k2 = this.model.derivatives(currentT + dt / 2, x2);
+
+                    const x3 = currentX.map((val, i) => val + dt * k2[i] / 2);
+                    const k3 = this.model.derivatives(currentT + dt / 2, x3);
+
+                    const x4 = currentX.map((val, i) => val + dt * k3[i]);
+                    const k4 = this.model.derivatives(currentT + dt, x4);
+
+                    currentX = currentX.map((val, i) =>
+                        val + (dt / 6.0) * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i])
+                    );
+
+                    currentT += dt;
+                    t.push(currentT);
+                    x.push([...currentX]);
+                }
+
+                return { t, x };
+            }
+        }
+
+        // Euler Solver
+        class EulerSolver {
+            constructor(model) {
+                this.model = model;
+            }
+
+            solve(x0, tSpan, dt) {
+                const [tStart, tEnd] = tSpan;
+                const t = [];
+                const x = [];
+
+                let currentT = tStart;
+                let currentX = [...x0];
+
+                t.push(currentT);
+                x.push([...currentX]);
+
+                while (currentT < tEnd) {
+                    const dx = this.model.derivatives(currentT, currentX);
+                    currentX = currentX.map((val, i) => val + dt * dx[i]);
+                    currentT += dt;
+
+                    t.push(currentT);
+                    x.push([...currentX]);
+                }
+
+                return { t, x };
+            }
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            const chartConfig = (title, yLabel, color) => ({
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: yLabel,
+                        data: [],
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: title,
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Time (s)' },
+                            ticks: { maxTicksLimit: 10 }
+                        },
+                        y: {
+                            title: { display: true, text: yLabel },
+                            beginAtZero: false
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+
+            charts.frequency = new Chart(
+                document.getElementById('chartFrequency'),
+                chartConfig('Frequency Deviation vs Time', 'Δf (Hz)', '#3498db')
+            );
+
+            charts.governor = new Chart(
+                document.getElementById('chartGovernor'),
+                chartConfig('Governor Response', 'Governor Output (p.u.)', '#e74c3c')
+            );
+
+            charts.turbine = new Chart(
+                document.getElementById('chartTurbine'),
+                chartConfig('Turbine Response', 'Turbine Output (p.u.)', '#2ecc71')
+            );
+
+            const powerBalanceConfig = chartConfig('Power Balance', 'Power (p.u.)', '#2ecc71');
+            powerBalanceConfig.data.datasets.push({
+                label: 'Load Disturbance',
+                data: [],
+                borderColor: '#95a5a6',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0,
+                pointRadius: 0
+            });
+            charts.powerBalance = new Chart(
+                document.getElementById('chartPowerBalance'),
+                powerBalanceConfig
+            );
+        }
+
+        // Update slider value display
+        function updateSlider(param) {
+            const slider = document.getElementById(`slider${param}`);
+            const valueDisplay = document.getElementById(`value${param}`);
+            let value = parseFloat(slider.value);
+
+            if (param === 'Dt' || param === 'Tsg' || param === 'Tt' || param === 'Ki') {
+                valueDisplay.textContent = value.toFixed(3);
+            } else if (param === 'DeltaPL') {
+                valueDisplay.textContent = value.toFixed(3);
+            } else if (param === 'Tsim') {
+                valueDisplay.textContent = value.toFixed(0);
+            } else {
+                valueDisplay.textContent = value.toFixed(1);
+            }
+        }
+
+        // Load Example 7.9
+        function loadExample79() {
+            document.getElementById('sliderKps').value = 104;
+            document.getElementById('sliderTps').value = 22;
+            document.getElementById('sliderR').value = 3;
+            document.getElementById('sliderTsg').value = 0.3;
+            document.getElementById('sliderTt').value = 0.4;
+            document.getElementById('sliderKi').value = 0.1;
+            document.getElementById('sliderDeltaPL').value = 0.48;
+            document.getElementById('sliderTsim').value = 50;
+
+            updateSlider('Kps');
+            updateSlider('Tps');
+            updateSlider('R');
+            updateSlider('Tsg');
+            updateSlider('Tt');
+            updateSlider('Ki');
+            updateSlider('DeltaPL');
+            updateSlider('Tsim');
+
+            document.getElementById('btnExample79').classList.add('active');
+            document.getElementById('btnExample710').classList.remove('active');
+            currentExample = 'Example 7.9';
+        }
+
+        // Load Example 7.10
+        function loadExample710() {
+            document.getElementById('sliderKps').value = 100;
+            document.getElementById('sliderTps').value = 20;
+            document.getElementById('sliderR').value = 2.5;
+            document.getElementById('sliderTsg').value = 0.3;
+            document.getElementById('sliderTt').value = 0.4;
+            document.getElementById('sliderKi').value = 0.15;
+            document.getElementById('sliderDeltaPL').value = 0.02;
+            document.getElementById('sliderTsim').value = 50;
+
+            updateSlider('Kps');
+            updateSlider('Tps');
+            updateSlider('R');
+            updateSlider('Tsg');
+            updateSlider('Tt');
+            updateSlider('Ki');
+            updateSlider('DeltaPL');
+            updateSlider('Tsim');
+
+            document.getElementById('btnExample79').classList.remove('active');
+            document.getElementById('btnExample710').classList.add('active');
+            currentExample = 'Example 7.10';
+        }
+
+        // Toggle integral control
+        function toggleIntegralControl() {
+            const checkbox = document.getElementById('withIntegral');
+            const badge = document.querySelector('.info-badge');
+
+            if (checkbox.checked) {
+                if (currentExample === 'Example 7.9') {
+                    document.getElementById('sliderKi').value = 0.1;
+                } else {
+                    document.getElementById('sliderKi').value = 0.15;
+                }
+                badge.textContent = 'ON';
+                badge.style.background = '#667eea';
+            } else {
+                document.getElementById('sliderKi').value = 0;
+                badge.textContent = 'OFF';
+                badge.style.background = '#95a5a6';
+            }
+            updateSlider('Ki');
+        }
+
+        // Select solver
+        function selectSolver(solver) {
+            currentSolver = solver;
+            document.getElementById('btnRK45').classList.remove('active');
+            document.getElementById('btnEuler').classList.remove('active');
+            document.getElementById(`btn${solver}`).classList.add('active');
+        }
+
+        // Run simulation
+        function runSimulation() {
+            // Get parameters
+            const Kps = parseFloat(document.getElementById('sliderKps').value);
+            const tps = parseFloat(document.getElementById('sliderTps').value);
+            const R = parseFloat(document.getElementById('sliderR').value);
+            const tsg = parseFloat(document.getElementById('sliderTsg').value);
+            const tt = parseFloat(document.getElementById('sliderTt').value);
+            const ki = parseFloat(document.getElementById('sliderKi').value);
+            const deltaPL = parseFloat(document.getElementById('sliderDeltaPL').value);
+            const tSim = parseFloat(document.getElementById('sliderTsim').value);
+            const dt = parseFloat(document.getElementById('sliderDt').value);
+
+            // Create model
+            const model = new PowerSystemModel(Kps, tps, R, tsg, tt, ki, deltaPL);
+
+            // Initial conditions
+            const x0 = [0, 0, 0, 0];
+
+            // Select solver
+            let solver;
+            if (currentSolver === 'RK45') {
+                solver = new RK45Solver(model);
+            } else {
+                solver = new EulerSolver(model);
+            }
+
+            // Solve
+            const result = solver.solve(x0, [0, tSim], dt);
+
+            // Extract results
+            const deltaF = result.x.map(state => state[0]);
+            const pg = result.x.map(state => state[1]);
+            const pt = result.x.map(state => state[2]);
+
+            // Calculate metrics
+            const peakDeviation = Math.min(...deltaF);
+            const steadyStateError = deltaF[deltaF.length - 1];
+
+            // Update charts
+            updateCharts(result.t, deltaF, pg, pt, deltaPL);
+
+            // Display results
+            displayResults(Kps, tps, R, tsg, tt, ki, deltaPL, peakDeviation, steadyStateError);
+        }
+
+        // Update charts
+        function updateCharts(t, deltaF, pg, pt, deltaPL) {
+            // Frequency chart
+            charts.frequency.data.labels = t;
+            charts.frequency.data.datasets[0].data = deltaF;
+            charts.frequency.update();
+
+            // Governor chart
+            charts.governor.data.labels = t;
+            charts.governor.data.datasets[0].data = pg;
+            charts.governor.update();
+
+            // Turbine chart
+            charts.turbine.data.labels = t;
+            charts.turbine.data.datasets[0].data = pt;
+            charts.turbine.update();
+
+            // Power balance chart
+            charts.powerBalance.data.labels = t;
+            charts.powerBalance.data.datasets[0].data = pt;
+            charts.powerBalance.data.datasets[1].data = t.map(() => deltaPL);
+            charts.powerBalance.update();
+        }
+
+        // Display results
+        function displayResults(Kps, tps, R, tsg, tt, ki, deltaPL, peakDeviation, steadyStateError) {
+            const resultsBox = document.getElementById('resultsBox');
+            const integralStatus = ki > 0 ? 'ON' : 'OFF';
+
+            resultsBox.innerHTML = `
+                <h4>${currentExample} Results</h4>
+                <strong>Solver:</strong> ${currentSolver}<br>
+                <strong>Integral Controller:</strong> ${integralStatus}<br><br>
+
+                <strong>System Parameters:</strong><br>
+                K<sub>ps</sub> = ${Kps.toFixed(2)}<br>
+                t<sub>ps</sub> = ${tps.toFixed(2)} s<br>
+                R = ${R.toFixed(2)}<br>
+                t<sub>sg</sub> = ${tsg.toFixed(2)} s<br>
+                t<sub>t</sub> = ${tt.toFixed(2)} s<br>
+                k<sub>i</sub> = ${ki.toFixed(3)}<br>
+                ΔP<sub>L</sub> = ${deltaPL.toFixed(3)} p.u.<br><br>
+
+                <strong>Results:</strong><br>
+                Peak Frequency Deviation: <span style="color: #e74c3c; font-weight: bold;">${peakDeviation.toFixed(6)} Hz</span><br>
+                Steady-State Error: <span style="color: ${Math.abs(steadyStateError) < 0.001 ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${steadyStateError.toFixed(6)} Hz</span><br>
+            `;
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initializeCharts();
+            loadExample79();
+            runSimulation();
+        };
+    </script>
+</body>
+</html>
